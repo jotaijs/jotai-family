@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
-    "target": "es5",
+    "module": "esnext",
+    "moduleResolution": "Node",
+    "target": "esnext",
     "declaration": true,
     "declarationDir": "./dist/types",
+    "downlevelIteration": true,
     "emitDeclarationOnly": true,
     "sourceMap": false,
     "rootDir": "src",
@@ -12,9 +14,7 @@
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "lib": ["dom", "esnext"],
-    "downlevelIteration": true,
     "esModuleInterop": true,
-    "moduleResolution": "NodeNext",
     "allowJs": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

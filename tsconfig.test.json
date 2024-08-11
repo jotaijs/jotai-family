@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "module": "NodeNext",
-    "target": "es5",
+    "moduleResolution": "NodeNext",
+    "target": "esnext",
     "noEmit": true,
     "strict": true,
     "skipLibCheck": true,
     "rootDir": "src",
     "jsx": "react-jsx",
-    "lib": ["dom", "esnext"],
-    "moduleResolution": "NodeNext"
+    "lib": ["dom", "esnext"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist"]

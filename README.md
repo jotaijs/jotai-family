@@ -2,42 +2,110 @@
 
 [jotai-family](https://github.com/jotaijs/jotai-family) is a package for atom collections.
 
-## Parameters
+### Usage
 
 ```js
-declare function atomFamily<Param, AtomType>(
-  initializeAtom: (param: Param) => AtomType,
-  hashFn?: (a: Param) => any
-): (param: Param) => AtomType
+atomFamily(initializeAtom, areEqual): (param) => Atom
 ```
 
-## Usage
+This will create a function that takes `param` and returns an atom.
+If the atom has already been created, it will be returned from the cache.
+`initializeAtom` is a function that can return any kind of atom (`atom()`, `atomWithDefault()`, ...).
+Note that the `areEqual` argument is optional and compares
+if two params are equal (defaults to `Object.is`).
+
+To reproduce behavior similar to [Recoil's atomFamily/selectorFamily](https://recoiljs.org/docs/api-reference/utils/atomFamily),
+specify a deepEqual function to `areEqual`. For example:
 
 ```js
-import { atomFamily } from 'jotai-family'
+import { atom } from 'jotai'
+import { atomFamily } from 'jotai/utils'
+import deepEqual from 'fast-deep-equal'
 
-const fooFamily = atomFamily((param) => atom(param))
-const fooAtom = fooFamily('foo')
+const fooFamily = atomFamily((param) => atom(param), deepEqual)
 ```
 
-This will create a function that takes `param` and returns an atom. If the atom has already been created, it will be returned from the cache.
+### TypeScript
 
-### Hash Function
+The atom family types will be inferred from initializeAtom. Here's a typical usage with a primitive atom.
 
-The `hashFn` is used to map the `param` to a key in the cache. By default, it uses the `param` as the key. If you want to use a custom key, you can provide a `hashFn` function.
-  
+```ts
+import type { PrimitiveAtom } from 'jotai'
+
+/**
+ * here the atom(id) returns a PrimitiveAtom<number>
+ * and PrimitiveAtom<number> is a WritableAtom<number, SetStateAction<number>>
+ */
+const myFamily = atomFamily((id: number) => atom(id)).
+```
+
+You can explicitly declare the type of parameter, value, and atom's setState function using TypeScript generics.
+
+```ts
+atomFamily<Param, Value, Update>(initializeAtom: (param: Param) => WritableAtom<Value, Update>, areEqual?: (a: Param, b: Param) => boolean)
+atomFamily<Param, Value>(initializeAtom: (param: Param) => Atom<Value>, areEqual?: (a: Param, b: Param) => boolean)
+```
+
+If you want to explicitly declare the atomFamily for a primitive atom, you need to use `SetStateAction`.
+
+```ts
+type SetStateAction<Value> = Value | ((prev: Value) => Value)
+
+const myFamily = atomFamily<number, number, SetStateAction<number>>(
+  (id: number) => atom(id),
+)
+```
+
+### Caveat: Memory Leaks
+
+Internally, atomFamily is just a Map whose key is a param and whose value is an atom config.
+Unless you explicitly remove unused params, this leads to memory leaks.
+This is crucial if you use infinite number of params.
+
+There are two ways to remove params.
+
+- `myFamily.remove(param)` allows you to remove a specific param.
+- `myFamily.setShouldRemove(shouldRemove)` is to register `shouldRemove` function which runs immediately **and** when you are to get an atom from a cache.
+  - shouldRemove is a function that takes two arguments `createdAt` in milliseconds and `param`, and returns a boolean value.
+  - setting `null` will remove the previously registered function.
+
+### Examples
+
 ```js
-const fooFamily = atomFamily((param) => atom(param), (param) => param.id)
-const fooAtom = fooFamily({ id: 'foo' })
+import { atom } from 'jotai'
+import { atomFamily } from 'jotai/utils'
+
+const todoFamily = atomFamily((name) => atom(name))
+
+todoFamily('foo')
+// this will create a new atom('foo'), or return the one if already created
 ```
+
+```js
+import { atom } from 'jotai'
+import { atomFamily } from 'jotai/utils'
+
+const todoFamily = atomFamily((name) =>
+  atom(
+    (get) => get(todosAtom)[name],
+    (get, set, arg) => {
+      const prev = get(todosAtom)
+      set(todosAtom, { ...prev, [name]: { ...prev[name], ...arg } })
+    },
+  ),
+)
+```
+
+```js
+import { atom } from 'jotai'
+import { atomFamily } from 'jotai/utils'
+
+const todoFamily = atomFamily(
+  ({ id, name }) => atom({ name }),
+  (a, b) => a.id === b.id,
+)
+```
+
+### Codesandbox
 
 <CodeSandbox id="huxd4i" />
-
-## Why use `atomFamily`?
-
-Using `atomFamily` is a good way to manage a collection of atoms. It is useful for when you need to create atoms dynamically, for example when you have a list of items and you want to create an atom for each item. 
-
-## Memory Safe
-
-The new `atomFamily` does not suffer from memory leaks. Internally it uses `Map<any, WeakRef<AtomType>>` to store atoms. 
-When the atom is garbage collected, the entry will be removed from the map automatically.

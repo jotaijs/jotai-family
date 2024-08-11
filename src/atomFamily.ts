@@ -2,21 +2,6 @@ import type { Atom } from 'jotai/vanilla'
 
 export type AtomFamily<Param, AtomType> = (param: Param) => AtomType
 
-// setInterval(() => {
-//   for (const entry of maps) {
-//     const map = entry.deref()
-//     if (!map) {
-//       maps.delete(entry)
-//       continue
-//     }
-//     for (const [k, v] of map.entries()) {
-//       if (!v.deref()) {
-//         map.delete(k)
-//       }
-//     }
-//   }
-// }, 10_000)
-
 export function atomFamily<Key, AtomType extends Atom<unknown>>(
   initializeAtom: (key: Key) => AtomType,
   hashFn: (k: Key) => Key = (k) => k
@@ -30,18 +15,17 @@ export function atomFamily<Key, AtomType extends Atom<unknown>>(
     const hash = hashFn(key)
     const existing = map.get(hash)
     if (!existing) {
-      const atom = initializeAtom(hash)
+      const atom = initializeAtom(key)
       const weakRef = new WeakRef(atom)
       finalizationRegistry.register(weakRef, hash, weakRef)
-      map.set(key, weakRef)
+      map.set(hash, weakRef)
       return atom
     }
     let deref = existing.deref()
     if (!deref) {
-      const newRef = initializeAtom(hash)
-      deref = newRef
-      const weakRef = new WeakRef(newRef)
-      map.set(key, weakRef)
+      deref = initializeAtom(key)
+      const weakRef = new WeakRef(deref)
+      map.set(hash, weakRef)
       finalizationRegistry.register(weakRef, hash, weakRef)
     }
     return deref

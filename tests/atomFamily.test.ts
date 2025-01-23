@@ -1,5 +1,6 @@
 import { type Atom, atom, createStore } from 'jotai/vanilla'
-import { atomFamily } from '../src/atomFamily'
+import { expect, it, vi } from 'vitest'
+import { atomFamily } from 'jotai-family'
 
 it('should create atoms with different params', () => {
   const store = createStore()
@@ -11,7 +12,7 @@ it('should create atoms with different params', () => {
 
 it('should remove atoms', () => {
   const store = createStore()
-  const initializeAtom = jest.fn((param: number) => atom(param))
+  const initializeAtom = vi.fn((param: number) => atom(param))
   const aFamily = atomFamily(initializeAtom)
 
   expect(store.get(aFamily(1))).toEqual(1)
@@ -26,7 +27,7 @@ it('should remove atoms', () => {
 
 it('should remove atoms with custom comparator', () => {
   const store = createStore()
-  const initializeAtom = jest.fn((param: number) => atom(param))
+  const initializeAtom = vi.fn((param: number) => atom(param))
   const aFamily = atomFamily(initializeAtom, (a, b) => a === b)
 
   expect(store.get(aFamily(1))).toEqual(1)
@@ -42,7 +43,7 @@ it('should remove atoms with custom comparator', () => {
 
 it('should remove atoms with custom shouldRemove', () => {
   const store = createStore()
-  const initializeAtom = jest.fn((param: number) => atom(param))
+  const initializeAtom = vi.fn((param: number) => atom(param))
   const aFamily = atomFamily<number, Atom<number>>(initializeAtom)
   expect(store.get(aFamily(1))).toEqual(1)
   expect(store.get(aFamily(2))).toEqual(2)
@@ -59,7 +60,7 @@ it('should remove atoms with custom shouldRemove', () => {
 
 it('should notify listeners', () => {
   const aFamily = atomFamily((param: number) => atom(param))
-  const listener = jest.fn(() => {})
+  const listener = vi.fn(() => {})
   type Event = { type: 'CREATE' | 'REMOVE'; param: number; atom: Atom<number> }
   const unsubscribe = aFamily.unstable_listen(listener)
   const atom1 = aFamily(1)

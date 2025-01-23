@@ -1,29 +1,22 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "moduleResolution": "Node",
-    "target": "esnext",
-    "declaration": true,
-    "declarationDir": "./dist/types",
-    "downlevelIteration": true,
-    "emitDeclarationOnly": true,
-    "sourceMap": false,
-    "rootDir": "src",
-    "outDir": "./dist",
     "strict": true,
-    "skipLibCheck": true,
-    "jsx": "react-jsx",
-    "lib": ["dom", "esnext"],
+    "target": "esnext",
+    "downlevelIteration": true,
     "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "allowJs": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "jotai-effect": ["./src"]
+      "jotai-family": ["./src"]
     }
   },
+  "include": ["src", "tests"],
   "exclude": ["dist"]
 }

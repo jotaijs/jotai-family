@@ -109,3 +109,107 @@ const todoFamily = atomFamily(
 ### Codesandbox
 
 <CodeSandbox id="huxd4i" />
+
+---
+
+## atomTree
+
+The **atomTree** utility provides a hierarchical way to create, reuse, and remove Jotai atoms. Each atom is associated with a unique path, which is an array of unknown types. When you request the same path multiple times, `atomTree` ensures that the same atom instance is returned. You can also remove a specific atom or an entire subtree of atoms when they are no longer needed.
+
+Use `atomTree` when you anticipate a large number of potential paths and want to:
+
+- **Reuse the same atom** for repeated paths.  
+- **Clean up** unwanted atoms easily, including entire subtrees.
+
+```js
+import { atom } from 'jotai'
+import { atomTree } from 'jotai-family'
+
+// Create a tree instance, passing a factory function
+// that takes a path array and returns a new atom.
+const tree = atomTree((path) => atom(path.join('-')))
+
+// Create or retrieve the atom at ['foo', 'bar']
+const atomA = tree(['foo', 'bar'])
+const atomB = tree(['foo', 'bar'])
+
+// atomA and atomB are the same instance.
+console.log(atomA === atomB) // true
+
+// Remove the atom at ['foo', 'bar']
+// (and optionally remove its entire subtree)
+tree.remove(['foo', 'bar'])
+```
+
+### API
+
+#### Creating the tree
+
+Creates a new hierarchical tree of Jotai atoms. It accepts a **initializePathAtom** function that receives a path array and returns an atom. The returned function can be used to create, retrieve, and remove atoms at specific paths.
+
+```ts
+function atomTree<Path, AtomType>(
+  initializePathAtom: (path: Path) => AtomType
+): {
+  (path: Path): AtomType
+  remove(path: Path, removeSubTree?: boolean): void
+  getSubTree(path: Path): Node<AtomType> | undefined
+  getNodePath(path: Path): Node<AtomType>[]
+}
+
+type Node<AtomType> = {
+  atom?: AtomType
+  children?: Map<PathSegment, Node<AtomType>>
+}
+```
+
+### Creating Path Atoms
+```ts
+tree(path: Path): AtomType
+```
+Creates (or retrieves) an atom at the specified path. Subsequent calls with the same path return the same atom instance.
+
+### Removing Path Atoms
+```ts
+tree.remove(path: Path, removeSubTree = false): void
+```
+Removes the atom at the specified path. If `removeSubTree` is `true`, all child paths under that path are also removed.
+
+This method removes the atom at the specified path. If `removeSubTree` is `true`, it also removes all child paths under that path.
+
+### Retrieving A Subtree
+```ts
+tree.getSubTree(path: Path): Node<AtomType> | undefined
+```
+
+Retrieves the internal node representing the specified path. This is useful for inspecting the tree structure. The node structure is as follows:
+
+```ts
+type Node<AtomType> = {
+  atom?: AtomType
+  children?: Map<PathSegment, Node<AtomType>>
+}
+```
+
+### Retrieving A Node Path
+```ts
+tree.getNodePath(path: Path): Node<AtomType>[]
+```
+Returns an array of node objects from the root node to the node at the specified path, inclusive.
+
+## Usage Example
+
+```js
+import { atom } from 'jotai'
+import { atomTree } from 'jotai-family'
+
+const btree = atomTree((path) => atom(`Data for path: ${path}`))
+
+// Create or retrieve the atom at [true, false]
+const userAtom = btree([true, false])
+
+console.log(store.get(userAtom)) // 'Data for path: true,false'
+
+// Remove the atom (and optionally remove its subtree)
+btree.remove([true,false])
+```

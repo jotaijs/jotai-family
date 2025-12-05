@@ -1,6 +1,8 @@
-# atomFamily
+# jotai-family
 
 [jotai-family](https://github.com/jotaijs/jotai-family) is a package for atom collections.
+
+## atomFamily
 
 ### Usage
 
@@ -19,7 +21,7 @@ specify a deepEqual function to `areEqual`. For example:
 
 ```js
 import { atom } from 'jotai'
-import { atomFamily } from 'jotai/utils'
+import { atomFamily } from 'jotai-family'
 import deepEqual from 'fast-deep-equal'
 
 const fooFamily = atomFamily((param) => atom(param), deepEqual)
@@ -36,23 +38,27 @@ import type { PrimitiveAtom } from 'jotai'
  * here the atom(id) returns a PrimitiveAtom<number>
  * and PrimitiveAtom<number> is a WritableAtom<number, SetStateAction<number>>
  */
-const myFamily = atomFamily((id: number) => atom(id)).
+const myFamily = atomFamily((id: number) => atom(id))
 ```
 
-You can explicitly declare the type of parameter, value, and atom's setState function using TypeScript generics.
+You can explicitly declare the type of parameter and atom type using TypeScript generics.
 
 ```ts
-atomFamily<Param, Value, Update>(initializeAtom: (param: Param) => WritableAtom<Value, Update>, areEqual?: (a: Param, b: Param) => boolean)
-atomFamily<Param, Value>(initializeAtom: (param: Param) => Atom<Value>, areEqual?: (a: Param, b: Param) => boolean)
+atomFamily<Param, AtomType extends Atom<unknown>>(
+  initializeAtom: (param: Param) => AtomType,
+  areEqual?: (a: Param, b: Param) => boolean
+): AtomFamily<Param, AtomType>
 ```
 
-If you want to explicitly declare the atomFamily for a primitive atom, you need to use `SetStateAction`.
+Example with explicit types:
 
 ```ts
-type SetStateAction<Value> = Value | ((prev: Value) => Value)
+import { atom } from 'jotai'
+import type { PrimitiveAtom } from 'jotai'
+import { atomFamily } from 'jotai-family'
 
-const myFamily = atomFamily<number, number, SetStateAction<number>>(
-  (id: number) => atom(id),
+const myFamily = atomFamily<number, PrimitiveAtom<number>>(
+  (id: number) => atom(id)
 )
 ```
 
@@ -62,18 +68,50 @@ Internally, atomFamily is just a Map whose key is a param and whose value is an 
 Unless you explicitly remove unused params, this leads to memory leaks.
 This is crucial if you use infinite number of params.
 
-There are two ways to remove params.
+There are several methods available:
 
-- `myFamily.remove(param)` allows you to remove a specific param.
-- `myFamily.setShouldRemove(shouldRemove)` is to register `shouldRemove` function which runs immediately **and** when you are to get an atom from a cache.
-  - shouldRemove is a function that takes two arguments `createdAt` in milliseconds and `param`, and returns a boolean value.
-  - setting `null` will remove the previously registered function.
+#### `myFamily.remove(param)`
+Removes a specific param from the cache.
+
+#### `myFamily.setShouldRemove(shouldRemove)`
+Registers a `shouldRemove` function which runs immediately **and** when you are to get an atom from a cache.
+- `shouldRemove` is a function that takes two arguments `createdAt` in milliseconds and `param`, and returns a boolean value.
+- Setting `null` will remove the previously registered function.
+
+#### `myFamily.getParams()`
+Returns an iterable of all params currently in the cache.
+
+```ts
+const myFamily = atomFamily((id: number) => atom(id))
+myFamily(1)
+myFamily(2)
+myFamily(3)
+Array.from(myFamily.getParams()) // [1, 2, 3]
+```
+
+#### `myFamily.unstable_listen(callback)`
+Registers a callback that fires when an atom is created or removed. Returns a cleanup function.
+- **Note**: This API is for advanced use cases and can change without notice.
+
+```ts
+const myFamily = atomFamily((id: number) => atom(id))
+const unsubscribe = myFamily.unstable_listen((event) => {
+  console.log(event.type) // 'CREATE' or 'REMOVE'
+  console.log(event.param) // the param
+  console.log(event.atom) // the atom instance
+})
+
+myFamily(1) // logs: CREATE, 1, <atom>
+myFamily.remove(1) // logs: REMOVE, 1, <atom>
+
+unsubscribe() // stop listening
+```
 
 ### Examples
 
 ```js
 import { atom } from 'jotai'
-import { atomFamily } from 'jotai/utils'
+import { atomFamily } from 'jotai-family'
 
 const todoFamily = atomFamily((name) => atom(name))
 
@@ -83,7 +121,7 @@ todoFamily('foo')
 
 ```js
 import { atom } from 'jotai'
-import { atomFamily } from 'jotai/utils'
+import { atomFamily } from 'jotai-family'
 
 const todoFamily = atomFamily((name) =>
   atom(
@@ -98,7 +136,7 @@ const todoFamily = atomFamily((name) =>
 
 ```js
 import { atom } from 'jotai'
-import { atomFamily } from 'jotai/utils'
+import { atomFamily } from 'jotai-family'
 
 const todoFamily = atomFamily(
   ({ id, name }) => atom({ name }),
@@ -108,7 +146,7 @@ const todoFamily = atomFamily(
 
 ### Codesandbox
 
-<CodeSandbox id="huxd4i" />
+<CodeSandbox id="23lgqf" />
 
 ---
 
@@ -153,7 +191,7 @@ function atomTree<Path, AtomType>(
 ): {
   (path: Path): AtomType
   remove(path: Path, removeSubTree?: boolean): void
-  getSubTree(path: Path): Node<AtomType> | undefined
+  getSubTree(path: Path): Node<AtomType>
   getNodePath(path: Path): Node<AtomType>[]
 }
 
@@ -179,10 +217,10 @@ This method removes the atom at the specified path. If `removeSubTree` is `true`
 
 ### Retrieving A Subtree
 ```ts
-tree.getSubTree(path: Path): Node<AtomType> | undefined
+tree.getSubTree(path: Path): Node<AtomType>
 ```
 
-Retrieves the internal node representing the specified path. This is useful for inspecting the tree structure. The node structure is as follows:
+Retrieves the internal node representing the specified path. This is useful for inspecting the tree structure. **Throws an error if the path does not exist.** The node structure is as follows:
 
 ```ts
 type Node<AtomType> = {

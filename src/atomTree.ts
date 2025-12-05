@@ -54,7 +54,7 @@ export function atomTree<
    */
   createAtom.remove = (path = defaultPath, removeSubTree = false) => {
     const nodePath = createAtom.getNodePath(path)
-    const node = nodePath.at(-1)!
+    const node = nodePath[nodePath.length - 1]!
     delete node.atom
     if (removeSubTree) {
       delete node.children

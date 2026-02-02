@@ -5,7 +5,10 @@ type Node<AtomType extends Atom<unknown> = Atom<unknown>> = {
   atom?: AtomType
 }
 
-type AtomTree<Path extends unknown[], AtomType extends Atom<unknown>> = {
+type AtomTree<
+  Path extends readonly unknown[],
+  AtomType extends Atom<unknown>,
+> = {
   (path: Path): AtomType
   remove(path?: Path, removeSubTree?: boolean): void
   getSubTree(path?: Path): Node<AtomType>
@@ -20,11 +23,11 @@ type AtomTree<Path extends unknown[], AtomType extends Atom<unknown>> = {
  * @returns A function for creating and managing hierarchical atoms (with additional methods).
  */
 export function atomTree<
-  Path extends unknown[],
+  Path extends readonly unknown[],
   AtomType extends Atom<unknown>,
 >(initializePathAtom: (path: Path) => AtomType): AtomTree<Path, AtomType> {
   const root: Node<AtomType> = {}
-  const defaultPath = [] as unknown[] as Path
+  const defaultPath = [] as readonly unknown[] as Path
 
   /**
    * Creates or retrieves an atom at the specified path in the hierarchy.

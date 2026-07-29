@@ -1,4 +1,4 @@
-import { Atom } from 'jotai'
+import type { Atom } from 'jotai/vanilla'
 
 type Node<AtomType extends Atom<unknown> = Atom<unknown>> = {
   children?: Map<unknown, Node<AtomType>>

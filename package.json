@@ -74,7 +74,7 @@
     "eslint-plugin-prettier": "^5.5.4",
     "happy-dom": "^20.0.11",
     "jiti": "^2.6.1",
-    "jotai": "2.16.0",
+    "jotai": "3.0.0-alpha.0",
     "jotai-family": "link:",
     "prettier": "^3.7.4",
     "tsc-alias": "^1.8.16",
